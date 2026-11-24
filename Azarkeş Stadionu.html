@@ -1,0 +1,1280 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Azarkeş Stadionu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap">
+<style>
+/* Layout: tam ekran 3B sahne; üstdə hesab lövhəsi, altda axtarış və son gələnlər xətti.
+   Tək gecə görünüşü seçilib; bütün rənglər aşağıdakı tokenlərdən gəlir. */
+:root{
+  --bg:#070b16;
+  --panel:rgba(9,13,22,.84);
+  --panel-solid:#0d1320;
+  --fg:#f3f5f9;
+  --muted:#9ba7bd;
+  --line:rgba(255,255,255,.14);
+  --red:#e8303d;
+  --green:#3da43b;
+  --blue:#00b5e2;
+  --gold:#f5c451;
+  --paper:#ffffff;
+  --ink:#0a0f1a;
+  --f-display:'Barlow Condensed','Arial Narrow','Roboto Condensed',system-ui,sans-serif;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.35 var(--f-body);overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+#app{position:relative;height:100%;overflow:hidden;background:var(--bg)}
+#stage{position:absolute;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+#tags{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.tag{position:absolute;left:0;top:0;font:600 13px/1.2 var(--f-body);color:#fff;background:rgba(10,15,26,.7);padding:2px 8px;border-radius:999px;white-space:nowrap;will-change:transform}
+.tag.me{background:var(--gold);color:var(--ink);font-weight:800}
+.tag.focus{background:#7fd6ff;color:var(--ink);font-weight:800}
+
+.ui{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;gap:8px;pointer-events:none;
+  padding-block:12px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top,.bottom{display:flex;pointer-events:none}
+.top{justify-content:space-between;align-items:flex-start;gap:8px}
+.bottom{flex-direction:column;gap:8px}
+.top>*,.bottom>*,.side>*{pointer-events:auto}
+
+.score{display:flex;flex-direction:column;gap:4px;min-width:0}
+.big{display:flex;align-items:baseline;gap:8px;background:var(--panel);padding:6px 22px 6px 12px;clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);backdrop-filter:blur(6px);white-space:nowrap}
+.num{font:800 clamp(40px,13vw,58px)/1 var(--f-display);letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.cap{font:700 clamp(18px,5vw,24px)/1 var(--f-display);color:var(--muted);font-variant-numeric:tabular-nums}
+.row2{display:flex;align-items:stretch}
+.lbl{display:flex;align-items:center;gap:8px;background:var(--panel);padding:5px 12px;font:700 18px/1 var(--f-display);letter-spacing:.08em;backdrop-filter:blur(6px)}
+.lbl i{display:block;width:16px;height:12px;background:var(--red);transform:skewX(-18deg)}
+.pct{background:var(--paper);color:var(--ink);font:800 20px/1 var(--f-display);padding:6px 12px;font-variant-numeric:tabular-nums}
+.sub{background:var(--panel);color:var(--muted);font-size:12.5px;padding:3px 10px;align-self:flex-start;max-width:min(78vw,380px);backdrop-filter:blur(6px)}
+.pill{display:flex;align-items:center;gap:8px;background:var(--paper);color:var(--red);font:800 16px/1 var(--f-display);letter-spacing:.14em;padding:10px 14px 10px 22px;clip-path:polygon(14px 0,100% 0,calc(100% - 14px) 100%,0 100%);flex:none}
+.pill i{width:10px;height:10px;border-radius:50%;background:var(--red)}
+
+.side{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px;pointer-events:none}
+.sq{width:56px;height:56px;border-radius:18px;border:1px solid var(--line);background:var(--panel-solid);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+
+.hint{background:var(--panel-solid);border:1px solid var(--line);border-radius:18px;padding:10px 14px;text-align:center;color:var(--muted);font-size:14px;line-height:1.45}
+.hint b{color:var(--fg);font-weight:700}
+.toast{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.toast>div:first-child{min-width:0}
+.toast .t1{font:700 20px/1.1 var(--f-display);letter-spacing:.02em;overflow-wrap:anywhere}
+.toast .t2{color:var(--muted);font-size:14px;margin-top:2px}
+.toast button{flex:none;border:0;border-radius:10px;background:var(--gold);color:var(--ink);font:700 15px var(--f-body);padding:9px 12px;cursor:pointer}
+.chips{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);border-radius:16px;background:var(--panel-solid);color:#fff;font:700 17px/1 var(--f-body);padding:15px 18px;cursor:pointer}
+.chip.red{background:var(--red);border-color:var(--red)}
+.chip.green{background:var(--green);border-color:var(--green);color:#fff}
+.chip[aria-pressed="true"]:not(.green){border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.chip.green[aria-pressed="true"]{box-shadow:0 0 0 2px var(--paper)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.search{display:flex;align-items:stretch;height:56px;background:var(--panel-solid)}
+.slabel{display:flex;align-items:center;background:var(--paper);color:var(--ink);font:800 clamp(15px,4.6vw,20px)/1 var(--f-display);letter-spacing:.12em;padding:0 24px 0 14px;clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);white-space:nowrap;flex:none}
+.search input{flex:1;min-width:0;background:transparent;border:0;color:#fff;font:700 20px var(--f-display);padding:0 12px;letter-spacing:.01em}
+.search input::placeholder{color:#5f6b82}
+.go{border:0;background:var(--red);color:#fff;font:800 22px/1 var(--f-display);letter-spacing:.14em;padding:0 20px;cursor:pointer;flex:none}
+
+.ticker{display:flex;height:44px;background:#05080f;border-top:2px solid var(--red);overflow:hidden}
+.tlabel{flex:none;display:flex;align-items:center;background:var(--red);color:#fff;font:800 clamp(14px,4.2vw,19px)/1 var(--f-display);letter-spacing:.12em;padding:0 14px}
+.tview{flex:1;min-width:0;overflow:hidden;display:flex;align-items:center}
+.track{display:flex;width:max-content;animation:scroll 60s linear infinite}
+.half{display:flex;flex:none}
+.it{display:flex;align-items:center;gap:8px;padding:0 22px;white-space:nowrap;font:700 18px/1 var(--f-display)}
+.it b{color:#fff}
+.it .ar{color:var(--muted)}
+.it em{font-style:normal;color:var(--gold)}
+.it.note{color:var(--muted);font-weight:600}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.track{animation:none}.tview{overflow-x:auto}}
+
+#fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;background:var(--bg);z-index:5;font-size:17px}
+</style>
+
+<div id="app">
+  <div id="stage"></div>
+  <div id="tags" aria-hidden="true"></div>
+
+  <div class="ui">
+    <div class="top">
+      <div class="score">
+        <div class="big"><span class="num" id="num">0</span><span class="cap" id="cap">/ 0</span></div>
+        <div class="row2"><div class="lbl"><i></i>AZARKEŞLƏR</div><div class="pct" id="pct">%0,0</div></div>
+        <div class="sub" id="sub"></div>
+      </div>
+      <div class="pill"><i></i>PROTOTİP</div>
+    </div>
+
+    <div class="side">
+      <button class="sq" id="up" type="button" aria-label="Yuxarı qalx">▲</button>
+      <button class="sq" id="down" type="button" aria-label="Aşağı en">▼</button>
+    </div>
+
+    <div class="bottom">
+      <div class="hint" id="hint"><b>1 barmaq</b> fırlat · <b>2 barmaq</b> yaxınlaş/sürüşdür · <b>▲▼</b> yuxarı-aşağı · <b>iki dəfə toxun</b> ora uç · <b>toxun</b> kim oturur</div>
+      <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+        <div><div class="t1" id="t1"></div><div class="t2" id="t2"></div></div>
+        <button type="button" id="tact" hidden></button>
+      </div>
+      <div class="chips">
+        <button class="chip red" id="claim" type="button">Yerimi tut</button>
+        <button class="chip green" id="show" type="button" aria-pressed="false">İşıq şousu</button>
+        <button class="chip" id="roof" type="button" aria-pressed="true">Dam</button>
+        <button class="chip" id="home" type="button">Ümumi görünüş</button>
+        <button class="chip" id="release" type="button" hidden>Yerimi burax</button>
+      </div>
+      <form class="search" id="sform" autocomplete="off">
+        <div class="slabel">AZARKEŞ AXTAR</div>
+        <input id="who" type="text" placeholder="@istifadəçi adın" maxlength="31" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="İstifadəçi adı">
+        <button class="go" type="submit">TAP</button>
+      </form>
+      <div class="ticker">
+        <div class="tlabel">SON GƏLƏNLƏR</div>
+        <div class="tview"><div class="track" id="track"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="fallback" hidden>3B görüntü açılmadı.</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script id="main">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const fallback=$('fallback');
+let booted=false;
+function fail(m){fallback.hidden=false;fallback.textContent=m;}
+window.addEventListener('error',function(e){if(!booted)fail('Xəta: '+(e&&e.message?e.message:'naməlum'));});
+try{init();booted=true;}catch(err){fail('Xəta: '+(err&&err.message?err.message:String(err)));}
+
+function init(){
+if(typeof THREE==='undefined'){fail('3B kitabxana yüklənmədi. İnterneti yoxla və səhifəni yenilə.');return;}
+let renderer;
+try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});}catch(e){fail('Bu cihaz 3B görüntünü aça bilmədi.');return;}
+const stage=$('stage'),tagsEl=$('tags');
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));
+stage.appendChild(renderer.domElement);
+const canvas=renderer.domElement;
+const reduceMotion=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rng=mulberry32(1905);
+
+/* ---------- sahnə ---------- */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x070b16);
+scene.fog=new THREE.FogExp2(0x070b16,0.0011);
+const camera=new THREE.PerspectiveCamera(55,1,0.4,2200);
+scene.add(new THREE.HemisphereLight(0xa8bde8,0x232c3d,1.15));
+const sun=new THREE.DirectionalLight(0xdfe8ff,0.5);
+sun.position.set(-80,160,100);
+scene.add(sun);
+[[-45,48,0],[45,48,0]].forEach(function(p){
+  const l=new THREE.PointLight(0xfff1dc,0.95,230,1.2);l.position.set(p[0],p[1],p[2]);scene.add(l);
+});
+const warm=new THREE.PointLight(0xffd7a0,1.1,110,1.2);warm.position.set(158,10,0);scene.add(warm);
+function resize(){
+  const w=stage.clientWidth||1,h=stage.clientHeight||1;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+}
+if(window.ResizeObserver){new ResizeObserver(resize).observe(stage);}
+window.addEventListener('resize',resize);
+resize();
+
+/* ---------- ölçülər (metr) ---------- */
+const A0=96,B0=56;          // ilk sıranın ellipsi
+const R=30,STEP=0.8,RISE=0.55,Y0=0.9,SECT=32;
+const rowA=r=>A0+STEP*r,rowB=r=>B0+STEP*r,rowY=r=>Y0+RISE*r;
+const TOPY=rowY(R-1);
+const ROOF_IN=[102,62,25],ROOF_MID=[118,78,32],ROOF_OUT=[134,94,17];
+
+/* ---------- yardımçılar ---------- */
+const rgb=h=>{const c=new THREE.Color(h);return [c.r,c.g,c.b];};
+function ringStrip(parts,N){
+  const pos=[],col=[];
+  for(let q=0;q<parts.length;q++){
+    const p=parts[q];
+    for(let i=0;i<N;i++){
+      const t0=i/N*TAU,t1=(i+1)/N*TAU;
+      const c0=Math.cos(t0),s0=Math.sin(t0),c1=Math.cos(t1),s1=Math.sin(t1);
+      const ax=p.a0*c0,az=p.b0*s0,bx=p.a0*c1,bz=p.b0*s1,cx=p.a1*c0,cz=p.b1*s0,dx=p.a1*c1,dz=p.b1*s1;
+      const c=typeof p.col==='function'?p.col(i):p.col;
+      pos.push(ax,p.y0,az,bx,p.y0,bz,dx,p.y1,dz,ax,p.y0,az,dx,p.y1,dz,cx,p.y1,cz);
+      for(let k=0;k<6;k++)col.push(c[0],c[1],c[2]);
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  g.computeVertexNormals();
+  return g;
+}
+function mergeBoxes(list){
+  const pos=[],nor=[],col=[];let colored=false;
+  for(let q=0;q<list.length;q++){
+    const b=list[q],cc=b[6];
+    if(cc)colored=true;
+    const g=new THREE.BoxGeometry(b[0],b[1],b[2]).toNonIndexed();
+    g.translate(b[3],b[4],b[5]);
+    const p=g.attributes.position.array,n=g.attributes.normal.array;
+    for(let i=0;i<p.length;i++){pos.push(p[i]);nor.push(n[i]);}
+    for(let k=0;k<p.length/3;k++){if(cc)col.push(cc[0],cc[1],cc[2]);else col.push(1,1,1);}
+  }
+  const G=new THREE.BufferGeometry();
+  G.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  G.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
+  if(colored)G.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  return G;
+}
+function glowTexture(){
+  const c=document.createElement('canvas');c.width=c.height=64;
+  const g=c.getContext('2d');
+  const gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(0.25,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gr;g.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+}
+const GLOW=glowTexture();
+function glowPoints(arr,size,color,opacity){
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));
+  const m=new THREE.Points(g,new THREE.PointsMaterial({map:GLOW,size:size,color:color,transparent:true,opacity:opacity===undefined?1:opacity,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}));
+  m.frustumCulled=false;scene.add(m);return m;
+}
+const ep=(a,b,y,t)=>[a*Math.cos(t),y,b*Math.sin(t)];
+const updaters=[];
+const personBodyGeo=mergeBoxes([[0.34,0.8,0.24,0,0.4,0,[0.12,0.14,0.22]],[0.46,0.62,0.28,0,1.11,0]]);
+const personHeadGeo=mergeBoxes([[0.22,0.22,0.22,0,1.55,0]]);
+
+/* ---------- yer, şəhər, ulduzlar ---------- */
+const groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(2600,2600),new THREE.MeshLambertMaterial({color:0x0a0f15}));
+groundMesh.rotation.x=-Math.PI/2;groundMesh.position.y=-0.1;scene.add(groundMesh);
+(function plaza(){
+  const sh=new THREE.Shape();
+  for(let i=0;i<=160;i++){const t=i/160*TAU;const x=178*Math.cos(t),y=138*Math.sin(t);if(i===0)sh.moveTo(x,y);else sh.lineTo(x,y);}
+  const g=new THREE.ShapeGeometry(sh);g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x1a212c}));m.position.y=0.02;scene.add(m);
+})();
+(function stars(){
+  const p=[];
+  for(let i=0;i<360;i++){
+    const u=rng()*TAU,v=0.12+rng()*1.3,r=1500;
+    p.push(r*Math.cos(u)*Math.cos(v),r*Math.sin(v),r*Math.sin(u)*Math.cos(v));
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+  const m=new THREE.Points(g,new THREE.PointsMaterial({color:0xcfd9ff,size:2.2,sizeAttenuation:false,fog:false,transparent:true,opacity:0.8}));
+  m.frustumCulled=false;scene.add(m);
+})();
+(function trees(){
+  const cone=new THREE.ConeGeometry(3.2,10,6);cone.translate(0,7,0);
+  const N=320,mesh=new THREE.InstancedMesh(cone,new THREE.MeshLambertMaterial({color:0xffffff}),N);
+  const d=new THREE.Object3D(),col=new THREE.Color();
+  let n=0,guard=0;
+  while(n<N&&guard++<6000){
+    const x=(rng()-0.5)*900,z=(rng()-0.5)*760;
+    if(Math.abs(x)<350&&Math.abs(z)<260)continue;   // yollar, dayanacaqlar və binalar üçün yer
+    if(Math.abs(z)<16)continue;                      // magistral yol
+    const s=0.8+rng()*0.9;
+    d.position.set(x,0,z);d.scale.set(s,s,s);d.updateMatrix();
+    mesh.setMatrixAt(n,d.matrix);mesh.setColorAt(n,col.setHSL(0.34+rng()*0.05,0.5,0.12+rng()*0.08));
+    n++;
+  }
+  mesh.count=n;mesh.frustumCulled=false;scene.add(mesh);
+  // küçə işıqları
+  const lp=[],ln=[];
+  for(let i=0;i<72;i++){
+    const t=i/72*TAU,x=168*Math.cos(t),z=128*Math.sin(t);
+    lp.push(x,8,z);ln.push(x,0,z,x,8,z);
+  }
+  glowPoints(lp,9,0xffe2a8,0.9);
+  const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(ln,3));
+  scene.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x4a5366})));
+})();
+
+/* ---------- saha və qaçış yolu ---------- */
+(function field(){
+  const S=10,W=192*S,H=112*S;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const c=cv.getContext('2d');
+  const X=x=>(x+96)*S,Z=z=>(z+56)*S;
+  c.fillStyle='#464c58';c.fillRect(0,0,W,H);
+  const L=42.2;
+  function stadium(r){
+    c.beginPath();
+    c.moveTo(X(-L),Z(-r));c.lineTo(X(L),Z(-r));
+    c.arc(X(L),Z(0),r*S,-Math.PI/2,Math.PI/2,false);
+    c.lineTo(X(-L),Z(r));
+    c.arc(X(-L),Z(0),r*S,Math.PI/2,Math.PI*1.5,false);
+    c.closePath();
+  }
+  stadium(47.6);c.fillStyle='#2e7a3d';c.fill();
+  stadium(46.3);c.fillStyle='#bf4f3a';c.fill();
+  stadium(36.5);c.fillStyle='#276f3a';c.fill();
+  c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=1;
+  for(let k=1;k<=7;k++){stadium(36.5+k*1.22);c.stroke();}
+  c.lineWidth=3;stadium(36.5);c.stroke();
+  // futbol meydançası
+  const px0=-52.5,pz0=-34;
+  for(let i=0;i<15;i++){c.fillStyle=i%2?'#2a8444':'#2e8e49';c.fillRect(X(px0+i*7),Z(pz0),7*S+1,68*S);}
+  c.strokeStyle='rgba(255,255,255,.95)';c.fillStyle='rgba(255,255,255,.95)';c.lineWidth=3;
+  c.strokeRect(X(-52.5),Z(-34),105*S,68*S);
+  c.beginPath();c.moveTo(X(0),Z(-34));c.lineTo(X(0),Z(34));c.stroke();
+  c.beginPath();c.arc(X(0),Z(0),9.15*S,0,TAU);c.stroke();
+  c.beginPath();c.arc(X(0),Z(0),0.4*S,0,TAU);c.fill();
+  [-1,1].forEach(function(s){
+    const gx=s*52.5;
+    c.strokeRect(s>0?X(gx-16.5):X(gx),Z(-20.16),16.5*S,40.32*S);
+    c.strokeRect(s>0?X(gx-5.5):X(gx),Z(-9.16),5.5*S,18.32*S);
+    c.beginPath();c.arc(X(s*41.5),Z(0),0.4*S,0,TAU);c.fill();
+    c.beginPath();
+    if(s>0)c.arc(X(41.5),Z(0),9.15*S,Math.PI-0.927,Math.PI+0.927,false);else c.arc(X(-41.5),Z(0),9.15*S,-0.927,0.927,false);
+    c.stroke();
+  });
+  const tex=new THREE.CanvasTexture(cv);
+  tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
+  const sh=new THREE.Shape();
+  for(let i=0;i<=200;i++){const t=i/200*TAU;const x=96*Math.cos(t),y=56*Math.sin(t);if(i===0)sh.moveTo(x,y);else sh.lineTo(x,y);}
+  const g=new THREE.ShapeGeometry(sh);
+  const p=g.attributes.position,uv=g.attributes.uv;
+  for(let i=0;i<p.count;i++)uv.setXY(i,(p.getX(i)+96)/192,(p.getY(i)+56)/112);
+  g.rotateX(-Math.PI/2);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:tex,color:0xc9d0cc}));
+  m.position.y=0.1;scene.add(m);
+  const wm=new THREE.MeshBasicMaterial({color:0xffffff});
+  [-52.5,52.5].forEach(function(x){
+    [-3.66,3.66].forEach(function(z){const post=new THREE.Mesh(new THREE.BoxGeometry(0.14,2.44,0.14),wm);post.position.set(x,1.32,z);scene.add(post);});
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.14,7.46),wm);bar.position.set(x,2.54,0);scene.add(bar);
+  });
+})();
+
+/* ---------- tribunalar (pillələr, pillə yanları, reklam lövhələri) ---------- */
+(function stands(){
+  const tread=rgb('#59607a'),treadB=rgb('#505870'),aisle=rgb('#9099b2'),riser=rgb('#383e50');
+  const N=SECT*32;
+  const parts=[];
+  for(let r=0;r<R;r++){
+    const a=rowA(r),b=rowB(r),y=rowY(r),yp=r===0?0.05:rowY(r-1);
+    parts.push({a0:a-0.4,b0:b-0.4,y0:y,a1:a+0.4,b1:b+0.4,y1:y,col:function(i){
+      const k=i%32;
+      if(k===0||k===31)return aisle;
+      return (Math.floor(i/32)%2)?treadB:tread;}});
+    parts.push({a0:a-0.4,b0:b-0.4,y0:yp,a1:a-0.4,b1:b-0.4,y1:y,col:riser});
+  }
+  scene.add(new THREE.Mesh(ringStrip(parts,N),new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide})));
+  // tribunanın arxa divarı
+  const back=ringStrip([{a0:rowA(R-1)+0.4,b0:rowB(R-1)+0.4,y0:0,a1:rowA(R-1)+0.4,b1:rowB(R-1)+0.4,y1:TOPY,col:rgb('#2c3242')}],256);
+  scene.add(new THREE.Mesh(back,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide})));
+  // meydança ətrafı reklam lövhələri
+  const b1=rgb('#1456c4'),b2=rgb('#0b1226'),b3=rgb('#d9202e');
+  const ads=ringStrip([{a0:95.2,b0:55.2,y0:0.08,a1:95.2,b1:55.2,y1:1.3,col:function(i){const k=i%12;return k<5?b1:(k<6?b3:(k<11?b2:b3));}}],240);
+  scene.add(new THREE.Mesh(ads,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide})));
+  // xarici divar (ağ-boz dilimlər)
+  const w1=rgb('#e7eaf0'),w2=rgb('#aab2c2');
+  const wall=ringStrip([{a0:132,b0:92,y0:0,a1:132,b1:92,y1:17.2,col:function(i){return (i%8<4)?w1:w2;}}],256);
+  scene.add(new THREE.Mesh(wall,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide})));
+  // dayaq sütunları
+  const cg=new THREE.CylinderGeometry(0.45,0.55,17.2,8);cg.translate(0,8.6,0);
+  const cm=new THREE.InstancedMesh(cg,new THREE.MeshLambertMaterial({color:0xcfd5e0}),48);
+  const d=new THREE.Object3D();
+  for(let i=0;i<48;i++){const t=i/48*TAU;d.position.set(133.2*Math.cos(t),0,93.2*Math.sin(t));d.updateMatrix();cm.setMatrixAt(i,d.matrix);}
+  scene.add(cm);
+})();
+
+/* ---------- dam (ağ membran, polad şəbəkə, işıqlar) ---------- */
+const roofGroup=new THREE.Group();
+(function roof(){
+  const white=rgb('#f4f6fa');
+  const g=ringStrip([
+    {a0:ROOF_IN[0],b0:ROOF_IN[1],y0:ROOF_IN[2],a1:ROOF_MID[0],b1:ROOF_MID[1],y1:ROOF_MID[2],col:white},
+    {a0:ROOF_MID[0],b0:ROOF_MID[1],y0:ROOF_MID[2],a1:ROOF_OUT[0],b1:ROOF_OUT[1],y1:ROOF_OUT[2],col:white}
+  ],200);
+  const mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:0.8,side:THREE.DoubleSide,depthWrite:false}));
+  mesh.renderOrder=2;
+  roofGroup.add(mesh);
+  // polad şəbəkə
+  const NT=120,v=[];
+  const seg=(p,q)=>{v.push(p[0],p[1],p[2],q[0],q[1],q[2]);};
+  for(let i=0;i<NT;i++){
+    const t=i/NT*TAU,t2=(i+1)/NT*TAU;
+    const I0=ep(ROOF_IN[0],ROOF_IN[1],ROOF_IN[2],t),M0=ep(ROOF_MID[0],ROOF_MID[1],ROOF_MID[2],t),O0=ep(ROOF_OUT[0],ROOF_OUT[1],ROOF_OUT[2],t);
+    const I1=ep(ROOF_IN[0],ROOF_IN[1],ROOF_IN[2],t2),M1=ep(ROOF_MID[0],ROOF_MID[1],ROOF_MID[2],t2),O1=ep(ROOF_OUT[0],ROOF_OUT[1],ROOF_OUT[2],t2);
+    seg(I0,M0);seg(M0,O0);
+    seg(I0,I1);seg(M0,M1);seg(O0,O1);
+    seg(I0,M1);seg(M0,I1);seg(M0,O1);seg(O0,M1);
+  }
+  const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(v,3));
+  const lines=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0xd9e0ee}));
+  lines.renderOrder=3;roofGroup.add(lines);
+  scene.add(roofGroup);
+  // projektorlar və LED halqa
+  const fp=[],led=[];
+  for(let i=0;i<110;i++){const t=i/110*TAU;const q=ep(105,65,23.4,t);fp.push(q[0],q[1],q[2]);}
+  for(let i=0;i<72;i++){const t=i/72*TAU;const q=ep(116,76,30.4,t);fp.push(q[0],q[1],q[2]);}
+  for(let i=0;i<420;i++){const t=i/420*TAU;const q=ep(102,62,24.6,t);led.push(q[0],q[1],q[2]);}
+  roofGroup.add(glowPoints(fp,11,0xfff0d0,0.95));
+  roofGroup.add(glowPoints(led,2.6,0xffffff,0.95));
+})();
+
+/* ---------- giriş binası (qızılı yazı) və lövhələr ---------- */
+(function entrance(){
+  const sand=new THREE.MeshLambertMaterial({color:0xcdb98e});
+  const dark=new THREE.MeshLambertMaterial({color:0x2a2622});
+  const grey=new THREE.MeshLambertMaterial({color:0x8b8f98});
+  const add=(w,h,d,x,y,z,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);scene.add(m);return m;};
+  add(14,14,46,135,7,0,sand);
+  add(14.6,0.9,46.8,135,14.4,0,grey);
+  add(4,4.5,46.6,143.2,11.25,0,sand);
+  for(let i=-7;i<=7;i++){
+    const cg=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.6,9,10),sand);
+    cg.position.set(144.2,4.5,i*3);scene.add(cg);
+    if(i<7)add(0.4,8,2.2,142.1,4,i*3+1.5,dark);
+  }
+  // yazı lövhəsi
+  const cv=document.createElement('canvas');cv.width=2560;cv.height=200;
+  const c=cv.getContext('2d');
+  c.fillStyle='#a8946a';c.fillRect(0,0,2560,200);
+  const text='TOFİQ BƏHRAMOV ADINA RESPUBLİKA STADİONU';
+  let fs=130;
+  c.textAlign='center';c.textBaseline='middle';
+  do{c.font='bold '+fs+'px Arial, Helvetica, sans-serif';fs-=4;}while(c.measureText(text).width>2380&&fs>40);
+  c.lineWidth=6;c.strokeStyle='#5c4a22';c.strokeText(text,1280,104);
+  c.fillStyle='#f3cf5e';c.fillText(text,1280,104);
+  const tex=new THREE.CanvasTexture(cv);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(44,3.44),new THREE.MeshBasicMaterial({map:tex}));
+  sign.position.set(145.3,11.25,0);sign.rotation.y=Math.PI/2;scene.add(sign);
+  // giriş qarşısı işıqlandırma
+  const lp=[];
+  for(let i=-6;i<=6;i++)lp.push(146.4,2.2,i*3.4);
+  glowPoints(lp,6,0xffd9a0,0.9);
+})();
+
+const screenCv=document.createElement('canvas');screenCv.width=1024;screenCv.height=320;
+const screenTex=new THREE.CanvasTexture(screenCv);
+function drawScreen(real){
+  const c=screenCv.getContext('2d');
+  c.fillStyle='#050b16';c.fillRect(0,0,1024,320);
+  c.fillStyle='#00b5e2';c.fillRect(0,0,1024,14);
+  c.fillStyle='#e8303d';c.fillRect(0,14,1024,14);
+  c.fillStyle='#3da43b';c.fillRect(0,28,1024,14);
+  c.textAlign='center';c.textBaseline='middle';c.fillStyle='#ffffff';
+  c.font='bold 92px Arial, Helvetica, sans-serif';c.fillText('TOFİQ BƏHRAMOV',512,125);
+  c.fillStyle='#9fb0cf';c.font='bold 46px Arial, Helvetica, sans-serif';c.fillText('ADINA RESPUBLİKA STADİONU',512,200);
+  c.fillStyle='#f5c451';c.font='bold 44px Arial, Helvetica, sans-serif';c.fillText('Real azarkeşlər: '+real,512,267);
+  screenTex.needsUpdate=true;
+}
+(function screens(){
+  const mat=new THREE.MeshBasicMaterial({map:screenTex,side:THREE.DoubleSide});
+  const geo=new THREE.PlaneGeometry(26,8.1);
+  const a=new THREE.Mesh(geo,mat);a.position.set(-103.6,19.6,0);a.rotation.y=Math.PI/2;scene.add(a);
+  const b=new THREE.Mesh(geo,mat);b.position.set(103.6,19.6,0);b.rotation.y=-Math.PI/2;scene.add(b);
+})();
+
+/* ---------- çöl: LED lövhə, bayraqlar, yollar, dayanacaqlar, binalar, giriş növbəsi ---------- */
+(function outside(){
+  const od=new THREE.Object3D(),oc=new THREE.Color();
+  function wiggleLite(mat){
+    mat.onBeforeCompile=function(sh){
+      sh.uniforms.uTimeL=timeU;sh.uniforms.uAmpL=ampU;
+      sh.vertexShader=sh.vertexShader
+        .replace('#include <common>','#include <common>\nuniform float uTimeL;\nuniform float uAmpL;')
+        .replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef USE_INSTANCING\nvec3 ipl=instanceMatrix[3].xyz;\nfloat phl=ipl.x*1.7+ipl.z*0.8;\nfloat onl=step(0.75,fract(sin(phl*12.9898)*43758.5453));\ntransformed.y+=uAmpL*onl*max(0.0,sin(uTimeL*4.0+phl*3.0))*0.06;\n#endif');
+    };
+    return mat;
+  }
+  const addFlat=(w,d,x,z,color,y)=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,0.06,d),new THREE.MeshLambertMaterial({color:color}));
+    m.position.set(x,y===undefined?0.03:y,z);scene.add(m);return m;
+  };
+  function flagCanvas(){
+    const cv=document.createElement('canvas');cv.width=600;cv.height=300;
+    const c=cv.getContext('2d');
+    c.fillStyle='#00b5e2';c.fillRect(0,0,600,100);
+    c.fillStyle='#ef3340';c.fillRect(0,100,600,100);
+    c.fillStyle='#509e2f';c.fillRect(0,200,600,100);
+    c.fillStyle='#ffffff';c.beginPath();c.arc(285,150,42,0,TAU);c.fill();
+    c.fillStyle='#ef3340';c.beginPath();c.arc(300,150,34,0,TAU);c.fill();
+    c.fillStyle='#ffffff';c.beginPath();
+    for(let i=0;i<16;i++){const an=i*Math.PI/8-Math.PI/2,rd=(i%2===0)?20:9;const x=337+rd*Math.cos(an),y=150+rd*Math.sin(an);if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}
+    c.closePath();c.fill();
+    return cv;
+  }
+
+  /* LED lövhə: bayraq + stadion adı */
+  (function led(){
+    const cv=document.createElement('canvas');cv.width=2048;cv.height=512;
+    const c=cv.getContext('2d');
+    c.fillStyle='#02060d';c.fillRect(0,0,2048,512);
+    c.drawImage(flagCanvas(),64,96,640,320);
+    c.strokeStyle='#d6deee';c.lineWidth=6;c.strokeRect(64,96,640,320);
+    const l1='TOFİQ BƏHRAMOV ADINA',l2='RESPUBLİKA STADİONU';
+    let fs=150;
+    c.textAlign='left';c.textBaseline='middle';
+    do{c.font='bold '+fs+'px Arial, Helvetica, sans-serif';fs-=4;}while((c.measureText(l1).width>1200||c.measureText(l2).width>1200)&&fs>40);
+    c.fillStyle='#ffffff';c.fillText(l1,780,170);
+    c.fillStyle='#f5c451';c.fillText(l2,780,340);
+    c.fillStyle='rgba(0,0,0,0.38)';
+    for(let x=0;x<2048;x+=8)c.fillRect(x,0,2,512);
+    for(let y=0;y<512;y+=8)c.fillRect(0,y,2048,2);
+    const tex=new THREE.CanvasTexture(cv);
+    const plane=new THREE.Mesh(new THREE.PlaneGeometry(46,11.5),new THREE.MeshBasicMaterial({map:tex}));
+    plane.position.set(147.1,22.75,0);plane.rotation.y=Math.PI/2;scene.add(plane);
+    const fr=new THREE.Mesh(new THREE.BoxGeometry(0.8,12.2,47.2),new THREE.MeshLambertMaterial({color:0x10131a}));
+    fr.position.set(146.6,22.75,0);scene.add(fr);
+    [-18,0,18].forEach(function(z){
+      const p=new THREE.Mesh(new THREE.BoxGeometry(0.7,2.4,0.7),new THREE.MeshLambertMaterial({color:0x10131a}));
+      p.position.set(146.6,15.8,z);scene.add(p);
+    });
+    const e=[];
+    for(let z=-23;z<=23;z+=1.5){e.push(147.6,16.8,z,147.6,28.7,z);}
+    for(let y=16.8;y<=28.7;y+=1.5){e.push(147.6,y,-23.2,147.6,y,23.2);}
+    glowPoints(e,2.6,0xbfe4ff,0.8);
+  })();
+
+  /* bayraq dirəkləri (küləkdə dalğalanır) */
+  (function flags(){
+    const tex=new THREE.CanvasTexture(flagCanvas());
+    const list=[];
+    [-27,27].forEach(function(pz){
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.22,21,8),new THREE.MeshLambertMaterial({color:0xdfe4ee}));
+      pole.position.set(146,10.5,pz);scene.add(pole);
+      const g=new THREE.PlaneGeometry(9,4.5,18,1);
+      const dir=pz>0?1:-1;
+      g.translate(dir>0?-4.5:4.5,0,0);
+      if(dir>0){const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setX(i,1-uv.getX(i));}
+      g.rotateY(Math.PI/2);
+      const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+      m.position.set(146.2,17.2,pz);scene.add(m);
+      list.push({g:g,base:Float32Array.from(g.attributes.position.array)});
+    });
+    updaters.push(function(t){
+      list.forEach(function(f){
+        const pa=f.g.attributes.position;
+        for(let i=0;i<pa.count;i++){
+          const bz=Math.abs(f.base[i*3+2]);
+          pa.setX(i,f.base[i*3]+Math.sin(bz*0.9-t*4)*0.55*bz/9);
+        }
+        pa.needsUpdate=true;
+      });
+    });
+  })();
+
+  /* yollar */
+  const ring=ringStrip([
+    {a0:188,b0:148,y0:0.04,a1:202,b1:162,y1:0.04,col:rgb('#151a22')},
+    {a0:194.85,b0:154.85,y0:0.05,a1:195.15,b1:155.15,y1:0.05,col:function(i){return (i%6<3)?rgb('#c9a93a'):rgb('#151a22');}}
+  ],240);
+  scene.add(new THREE.Mesh(ring,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide})));
+  addFlat(520,14,450,0,0x151a22);addFlat(520,14,-450,0,0x151a22);
+  addFlat(520,0.3,450,0,0xc9a93a,0.07);addFlat(520,0.3,-450,0,0xc9a93a,0.07);
+  addFlat(1000,12,0,172,0x151a22);addFlat(1000,12,0,-172,0x151a22);
+  addFlat(12,420,330,0,0x151a22);addFlat(12,420,-330,0,0x151a22);
+  (function lamps(){
+    const p=[],l=[];
+    for(let x=205;x<=700;x+=40){[-1,1].forEach(function(s){[-9,9].forEach(function(z){p.push(s*x,8,z);l.push(s*x,0,z,s*x,8,z);});});}
+    for(let x=-440;x<=440;x+=44){[-1,1].forEach(function(s){p.push(x,8,s*180);l.push(x,0,s*180,x,8,s*180);});}
+    glowPoints(p,9,0xffe2a8,0.85);
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(l,3));
+    scene.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:0x4a5366})));
+  })();
+
+  /* dayanacaqlar və maşınlar */
+  const carGeo=mergeBoxes([[1.8,0.6,4.3,0,0.55,0],[1.6,0.5,2.3,0,1.05,0.1,[0.35,0.4,0.5]]]);
+  const CAR_COLS=[0xe8e8ec,0x1a1d24,0x8a909c,0x2c4a8a,0xb3202c,0x4a5262,0xd8d2c2,0x1f5a3a];
+  const lots=[[267,79],[267,-79],[-267,79],[-267,-79]];
+  const pcars=[];
+  lots.forEach(function(L){
+    addFlat(110,110,L[0],L[1],0x10151d,0.025);
+    for(let gi=0;gi<6;gi++){
+      const z0=L[1]-55+5+gi*17.5;
+      [0,1].forEach(function(k){
+        const z=z0+k*5.0;
+        for(let x=L[0]-52;x<=L[0]+52;x+=2.7){
+          if(rng()<0.7)pcars.push([x,z,k?Math.PI:0,CAR_COLS[Math.floor(rng()*CAR_COLS.length)]]);
+        }
+      });
+    }
+  });
+  const parkMesh=new THREE.InstancedMesh(carGeo,new THREE.MeshLambertMaterial({vertexColors:true}),pcars.length);
+  pcars.forEach(function(p,i){
+    od.position.set(p[0],0.05,p[1]);od.rotation.set(0,p[2]+(rng()-0.5)*0.05,0);od.scale.set(1,1,1);od.updateMatrix();
+    parkMesh.setMatrixAt(i,od.matrix);parkMesh.setColorAt(i,oc.setHex(p[3]));
+  });
+  parkMesh.frustumCulled=false;scene.add(parkMesh);
+  // dayanacaq işıqları
+  (function(){
+    const p=[];
+    lots.forEach(function(L){for(let x=-48;x<=48;x+=24){for(let z=-48;z<=48;z+=24){p.push(L[0]+x,9,L[1]+z);}}});
+    glowPoints(p,10,0xfff0d0,0.7);
+  })();
+  // dövrə yolunda hərəkət edən maşınlar
+  const MOVING=26;
+  const moveMesh=new THREE.InstancedMesh(carGeo,new THREE.MeshLambertMaterial({vertexColors:true}),MOVING);
+  moveMesh.frustumCulled=false;scene.add(moveMesh);
+  const mv=[];
+  for(let i=0;i<MOVING;i++){
+    const dir=i%2?1:-1;
+    mv.push({t:rng()*TAU,dir:dir,a:dir>0?198:191,sp:9+rng()*5});
+    moveMesh.setColorAt(i,oc.setHex(CAR_COLS[Math.floor(rng()*CAR_COLS.length)]));
+  }
+  updaters.push(function(t){
+    for(let i=0;i<MOVING;i++){
+      const m=mv[i],a=m.a,b=m.a-40,th=m.t+m.dir*t*m.sp/a;
+      const tx=-a*Math.sin(th)*m.dir,tz=b*Math.cos(th)*m.dir;
+      od.position.set(a*Math.cos(th),0.05,b*Math.sin(th));od.rotation.set(0,Math.atan2(-tx,-tz),0);od.scale.set(1,1,1);od.updateMatrix();
+      moveMesh.setMatrixAt(i,od.matrix);
+    }
+    moveMesh.instanceMatrix.needsUpdate=true;
+  });
+
+  /* binalar (pəncərələri yanır) */
+  const winCv=document.createElement('canvas');winCv.width=winCv.height=128;
+  const wc=winCv.getContext('2d');
+  wc.fillStyle='#000';wc.fillRect(0,0,128,128);
+  const wcols=['#ffd98a','#ffe9b8','#bfe0ff','#ffcf7a'];
+  for(let gx=0;gx<8;gx++)for(let gy=0;gy<8;gy++){if(rng()<0.5){wc.fillStyle=wcols[Math.floor(rng()*4)];wc.fillRect(gx*16+3,gy*16+4,10,8);}}
+  const winTex=new THREE.CanvasTexture(winCv);winTex.wrapS=winTex.wrapT=THREE.RepeatWrapping;
+  const bMat=new THREE.MeshLambertMaterial({color:0x232a39,emissive:0xffffff,emissiveMap:winTex,emissiveIntensity:0.9});
+  [-1,1].forEach(function(side){
+    for(let i=0;i<11;i++){
+      const w=26+rng()*18,d=22+rng()*10,h=18+rng()*46;
+      const x=-310+i*62+(rng()-0.5)*8,z=side*(192+rng()*28);
+      const g=new THREE.BoxGeometry(w,h,d);g.translate(0,h/2,0);
+      const uv=g.attributes.uv,ku=Math.max(w,d)/24,kv=h/24;
+      for(let k=0;k<uv.count;k++)uv.setXY(k,uv.getX(k)*ku,uv.getY(k)*kv);
+      const m=new THREE.Mesh(g,bMat);m.position.set(x,0,z);scene.add(m);
+    }
+  });
+
+  /* giriş növbəsi: qapıda gözləyən adsız azarkeşlər */
+  const lanes=[-17.5,-10.5,-3.5,3.5,10.5,17.5];
+  const q=[];
+  const SH=[0x00b5e2,0xe8303d,0x3da43b,0xf1f3f6,0x232b44];
+  const SKINS_Q=[0x2a1d18,0x3a2a20,0x1c1512,0xd9a78a,0xb98563,0x8c5a3c];
+  function BLUEc(){return SH[Math.floor(rng()*SH.length)];}
+  lanes.forEach(function(zc){
+    for(let i=0;i<26;i++){
+      const p=0.95-0.55*i/26;
+      [-1.3,1.3].forEach(function(dz){
+        if(rng()<p)q.push([152+i*1.25+(rng()-0.5)*0.4,zc+dz+(rng()-0.5)*0.3,Math.PI/2+(rng()-0.5)*0.2]);
+      });
+    }
+  });
+  for(let i=0;i<110;i++)q.push([158+rng()*18,(rng()-0.5)*60,Math.PI/2+(rng()-0.5)*2.4]);
+  const qBody=new THREE.InstancedMesh(personBodyGeo,wiggleLite(new THREE.MeshLambertMaterial({vertexColors:true})),q.length);
+  const qHead=new THREE.InstancedMesh(personHeadGeo,wiggleLite(new THREE.MeshLambertMaterial({color:0xffffff})),q.length);
+  q.forEach(function(p,i){
+    od.position.set(p[0],0.02,p[1]);od.rotation.set(0,p[2],0);od.scale.set(1,1,1);od.updateMatrix();
+    qBody.setMatrixAt(i,od.matrix);qHead.setMatrixAt(i,od.matrix);
+    qBody.setColorAt(i,oc.setHex(BLUEc()));qHead.setColorAt(i,oc.setHex(SKINS_Q[Math.floor(rng()*SKINS_Q.length)]));
+  });
+  qBody.frustumCulled=false;qHead.frustumCulled=false;scene.add(qBody);scene.add(qHead);
+  // turniketlər və iplər
+  const gm=new THREE.MeshLambertMaterial({color:0x3b4150});
+  lanes.forEach(function(zc){const g=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.1,1.9),gm);g.position.set(149.6,0.55,zc);scene.add(g);});
+  const rl=[];
+  [-21,-14,-7,0,7,14,21].forEach(function(zb){
+    rl.push(152,1.0,zb,178,1.0,zb);
+    for(let x=152;x<=178;x+=6)rl.push(x,0,zb,x,1.15,zb);
+  });
+  const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.Float32BufferAttribute(rl,3));
+  scene.add(new THREE.LineSegments(rg,new THREE.LineBasicMaterial({color:0xe8303d})));
+})();
+
+/* ---------- oturacaqlar ---------- */
+const standOf=t=>{
+  const d=((t*180/Math.PI)%360+360)%360;
+  if(d>=325||d<35)return 0;
+  if(d<145)return 1;
+  if(d<215)return 2;
+  return 3;
+};
+const STAND_NAMES=['Şərq qapı arxası','Cənub tribunası','Qərb qapı arxası','Şimal tribunası'];
+const sxA=[],syA=[],szA=[],sphA=[],srA=[],ssA=[],snA=[],stA=[];
+(function buildSeats(){
+  const M=2000;
+  for(let r=0;r<R;r++){
+    const a=rowA(r),b=rowB(r),y=rowY(r);
+    const px=new Float32Array(M+1),pz=new Float32Array(M+1),cum=new Float32Array(M+1);
+    for(let i=0;i<=M;i++){
+      const t=i/M*TAU;px[i]=a*Math.cos(t);pz[i]=b*Math.sin(t);
+      cum[i]=i?cum[i-1]+Math.hypot(px[i]-px[i-1],pz[i]-pz[i-1]):0;
+    }
+    const L=cum[M],count=Math.floor(L/0.5),step=L/count;
+    const secCount=new Array(SECT).fill(0);
+    let j=0;
+    for(let k=0;k<count;k++){
+      const dd=(k+0.5)*step;
+      while(j<M-1&&cum[j+1]<dd)j++;
+      const f=(dd-cum[j])/(cum[j+1]-cum[j]);
+      const x=px[j]+(px[j+1]-px[j])*f,z=pz[j]+(pz[j+1]-pz[j])*f;
+      const t=(j+f)/M*TAU;
+      const sf=t/TAU*SECT,sec=Math.min(SECT-1,Math.floor(sf)),fr=sf-sec;
+      if(fr<0.03||fr>0.97)continue;
+      const nx=x/(a*a),nz=z/(b*b);
+      sxA.push(x);syA.push(y);szA.push(z);
+      sphA.push(Math.atan2(nx,nz));
+      srA.push(r);ssA.push(sec);snA.push(++secCount[sec]);stA.push(standOf(t));
+    }
+  }
+})();
+const NS=sxA.length;
+const sx=Float32Array.from(sxA),sy=Float32Array.from(syA),sz=Float32Array.from(szA),sph=Float32Array.from(sphA);
+const srow=Uint8Array.from(srA),ssec=Uint8Array.from(ssA),snum=Uint16Array.from(snA),sstand=Uint8Array.from(stA);
+const seatLoc=si=>STAND_NAMES[sstand[si]]+' · '+(101+ssec[si])+' · Sıra '+(srow[si]+1)+' · Yer '+snum[si];
+const seatBlock=si=>STAND_NAMES[sstand[si]]+' '+(101+ssec[si]);
+
+const seatMat=new THREE.MeshLambertMaterial({color:0xffffff});
+const seatGeo=mergeBoxes([[0.46,0.42,0.42,0,0.21,0],[0.46,0.4,0.07,0,0.62,0.215]]);
+const seatsMesh=new THREE.InstancedMesh(seatGeo,seatMat,NS);
+seatsMesh.frustumCulled=false;
+const dummy=new THREE.Object3D(),tmpC=new THREE.Color();
+const seatBase=si=>(ssec[si]%2)?0x353d52:0x3d465c;
+for(let i=0;i<NS;i++){
+  dummy.position.set(sx[i],sy[i],sz[i]);dummy.rotation.set(0,sph[i],0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+  seatsMesh.setMatrixAt(i,dummy.matrix);
+  seatsMesh.setColorAt(i,tmpC.setHex(seatBase(i)));
+}
+scene.add(seatsMesh);
+
+/* ---------- hərəkətli nümunə azarkeşlər (adsız, istifadəçi deyil) ---------- */
+const timeU={value:0},ampU={value:reduceMotion?0:1};
+function wiggle(mat){
+  mat.onBeforeCompile=function(sh){
+    sh.uniforms.uTime=timeU;sh.uniforms.uAmp=ampU;
+    sh.vertexShader=sh.vertexShader
+      .replace('#include <common>','#include <common>\nuniform float uTime;\nuniform float uAmp;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef USE_INSTANCING\nvec3 ip=instanceMatrix[3].xyz;\nfloat ph=ip.x*0.9+ip.z*1.3;\nfloat on=step(0.6,fract(sin(ph*12.9898)*43758.5453));\ntransformed.y+=uAmp*on*max(0.0,sin(uTime*5.0+ph*3.0))*0.09;\ntransformed.x+=uAmp*on*sin(uTime*3.0+ph)*0.03;\nfloat ang=atan(ip.z,ip.x);\nfloat wp=fract(ang/6.28318-uTime*0.045);\nfloat wv=smoothstep(0.0,0.025,wp)*(1.0-smoothstep(0.025,0.07,wp));\ntransformed.y*=1.0+uAmp*wv*0.5;\n#endif');
+  };
+  return mat;
+}
+const bodyGeo=mergeBoxes([[0.36,0.5,0.22,0,0.67,0.05]]);
+const headGeo=mergeBoxes([[0.2,0.2,0.2,0,1.05,0.05]]);
+const bodyMesh=new THREE.InstancedMesh(bodyGeo,wiggle(new THREE.MeshLambertMaterial({color:0xffffff})),NS);
+const headMesh=new THREE.InstancedMesh(headGeo,wiggle(new THREE.MeshLambertMaterial({color:0xffffff})),NS);
+[bodyMesh,headMesh].forEach(function(m){m.frustumCulled=false;scene.add(m);});
+const seatInst=new Int32Array(NS).fill(-1),instSeat=[];
+const ambShirt=new Uint32Array(NS),ambSkin=new Uint32Array(NS);
+let fanCount=0;
+function setFan(inst,si,shirt,skin,scale){
+  dummy.position.set(sx[si],sy[si],sz[si]);dummy.rotation.set(0,sph[si],0);dummy.scale.set(scale,scale,scale);dummy.updateMatrix();
+  bodyMesh.setMatrixAt(inst,dummy.matrix);headMesh.setMatrixAt(inst,dummy.matrix);
+  bodyMesh.setColorAt(inst,tmpC.setHex(shirt));headMesh.setColorAt(inst,tmpC.setHex(skin));
+}
+function flush(){
+  bodyMesh.count=fanCount;headMesh.count=fanCount;
+  bodyMesh.instanceMatrix.needsUpdate=true;headMesh.instanceMatrix.needsUpdate=true;
+  if(bodyMesh.instanceColor)bodyMesh.instanceColor.needsUpdate=true;
+  if(headMesh.instanceColor)headMesh.instanceColor.needsUpdate=true;
+}
+const BLUE=0x00b5e2,RED=0xe8303d,GREEN=0x3da43b,WHITE=0xf1f3f6,NAVY=0x232b44;
+const SKINS=[0x2a1d18,0x3a2a20,0x1c1512,0xd9a78a,0xb98563,0x8c5a3c];
+const pickOf=arr=>arr[Math.floor(rng()*arr.length)];
+const DENS=[0.88,0.6,0.74,0.52];
+(function ambient(){
+  for(let si=0;si<NS;si++){
+    const r=srow[si],st=sstand[si];
+    if(rng()>=DENS[st]*(1-0.22*r/R))continue;
+    let shirt;
+    const u=rng();
+    if(st===0){shirt=u<0.12?WHITE:(r<10?BLUE:(r<20?RED:GREEN));}           // Şərq: üçrəngli bayraq
+    else if(st===2){shirt=u<0.5?WHITE:(u<0.8?BLUE:RED);}
+    else{shirt=u<0.42?WHITE:(u<0.62?BLUE:(u<0.76?RED:(u<0.86?GREEN:NAVY)));}
+    const skin=pickOf(SKINS);
+    const inst=fanCount++;
+    seatInst[si]=inst;instSeat[inst]=si;ambShirt[si]=shirt;ambSkin[si]=skin;
+    setFan(inst,si,shirt,skin,1);
+  }
+  flush();
+})();
+
+/* ---------- meydança işçiləri və suvarma aparatları ---------- */
+(function groundCrew(){
+  const staffBody=new THREE.InstancedMesh(personBodyGeo,new THREE.MeshLambertMaterial({vertexColors:true}),64);
+  const staffHead=new THREE.InstancedMesh(personHeadGeo,new THREE.MeshLambertMaterial({color:0xffffff}),64);
+  staffBody.frustumCulled=false;staffHead.frustumCulled=false;
+  scene.add(staffBody);scene.add(staffHead);
+  let n=0;
+  function put(x,y,z,phi,vest,skin){
+    dummy.position.set(x,y,z);dummy.rotation.set(0,phi,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+    staffBody.setMatrixAt(n,dummy.matrix);staffHead.setMatrixAt(n,dummy.matrix);
+    staffBody.setColorAt(n,tmpC.setHex(vest));staffHead.setColorAt(n,tmpC.setHex(skin));
+    return n++;
+  }
+  // tribuna qarşısında dayanan təhlükəsizlik işçiləri
+  for(let i=0;i<36;i++){
+    const t=i/36*TAU+0.06,a=94,b=54;
+    const x=a*Math.cos(t),z=b*Math.sin(t);
+    put(x,0.1,z,Math.atan2(x/(a*a),z/(b*b))+Math.PI,0xe6ff3a,pickOf(SKINS));
+  }
+  // meydançada gəzən qulluqçular
+  const walkers=[];
+  [[-26,1.3,-40,1],[-13,1.5,10,-1],[0,1.2,-20,1],[13,1.4,35,-1],[26,1.3,0,1],[41.5,1.1,-30,1]].forEach(function(w){
+    walkers.push({idx:put(w[2],0.1,w[0],0,0xff7a1a,pickOf(SKINS)),z:w[0],sp:w[1],x:w[2],dir:w[3]});
+  });
+  staffBody.count=n;staffHead.count=n;
+  updaters.push(function(t,dt){
+    walkers.forEach(function(w,k){
+      w.x+=w.dir*w.sp*dt;
+      if(w.x>46){w.x=46;w.dir=-1;}
+      if(w.x<-46){w.x=-46;w.dir=1;}
+      dummy.position.set(w.x,0.1+0.05*Math.abs(Math.sin(t*6+k)),w.z);
+      dummy.rotation.set(0,w.dir>0?-Math.PI/2:Math.PI/2,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+      staffBody.setMatrixAt(w.idx,dummy.matrix);staffHead.setMatrixAt(w.idx,dummy.matrix);
+    });
+    staffBody.instanceMatrix.needsUpdate=true;staffHead.instanceMatrix.needsUpdate=true;
+  });
+  // gazon suvarma aparatları
+  const metal=new THREE.MeshLambertMaterial({color:0x8d96a6});
+  const sprinklers=[];
+  [[-30,-15],[0,-15],[30,-15],[-30,15],[0,15],[30,15]].forEach(function(p){
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,0.4,10),metal);base.position.set(p[0],0.3,p[1]);scene.add(base);
+    const riser=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.7,8),metal);riser.position.set(p[0],0.8,p[1]);scene.add(riser);
+    const arm=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.07,0.07),new THREE.MeshLambertMaterial({color:0xe0b020}));arm.position.set(p[0],1.15,p[1]);scene.add(arm);
+    const arr=new Float32Array(84*3),g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.BufferAttribute(arr,3));
+    const pts=new THREE.Points(g,new THREE.PointsMaterial({map:GLOW,size:0.6,color:0xcfeaff,transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}));
+    pts.frustumCulled=false;scene.add(pts);
+    sprinklers.push({x:p[0],z:p[1],arr:arr,g:g,arm:arm,seed:Math.random()*6});
+  });
+  updaters.push(function(t){
+    sprinklers.forEach(function(s){
+      const rs=1.7,T=1.35;
+      s.arm.rotation.y=-(rs*t+s.seed);
+      for(let i=0;i<84;i++){
+        const tt=((t*0.87+i/84)%1)*T;
+        const ang=rs*(t-tt)+s.seed+(i%2)*Math.PI+Math.sin(i*7.3)*0.05;
+        const r=6.6*tt,y=Math.max(0.15,1.2+5.4*tt-4.9*tt*tt);
+        s.arr[i*3]=s.x+Math.cos(ang)*r;s.arr[i*3+1]=y;s.arr[i*3+2]=s.z+Math.sin(ang)*r;
+      }
+      s.g.attributes.position.needsUpdate=true;
+    });
+  });
+})();
+
+/* ---------- real azarkeşlər ---------- */
+const reals=[],nameMap=new Map(),realBySeat=new Map();
+let mineF=null,serverOn=false;
+const GOLD=0xf5c451;
+const fmt=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const mineBeam=(function(){
+  const g=new THREE.CylinderGeometry(0.22,0.22,60,12,1,true);g.translate(0,30,0);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xffd36b,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+  m.visible=false;m.frustumCulled=false;scene.add(m);return m;
+})();
+const focusBeam=(function(){
+  const g=new THREE.CylinderGeometry(0.22,0.22,60,12,1,true);g.translate(0,30,0);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x7fd6ff,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+  m.visible=false;m.frustumCulled=false;scene.add(m);return m;
+})();
+function paintSeat(si,hex){seatsMesh.setColorAt(si,tmpC.setHex(hex));seatsMesh.instanceColor.needsUpdate=true;}
+function addReal(name,si,mine){
+  if(realBySeat.has(si)||nameMap.has(name))return null;
+  let inst=seatInst[si];
+  if(inst<0){inst=fanCount++;seatInst[si]=inst;instSeat[inst]=si;}
+  const f={name:name,seat:si,mine:!!mine,inst:inst};
+  reals.push(f);nameMap.set(name,f);realBySeat.set(si,f);
+  setFan(inst,si,GOLD,0x3a2a20,1.35);
+  paintSeat(si,0x8a6a1e);
+  flush();
+  if(mine){
+    mineF=f;
+    mineBeam.position.set(sx[si],sy[si],sz[si]);mineBeam.visible=true;
+    tagMine.textContent='@'+name+' · sən';
+    $('release').hidden=serverOn;
+  }
+  return f;
+}
+function removeMine(){
+  if(!mineF)return;
+  const f=mineF;
+  const k=reals.indexOf(f);if(k>=0)reals.splice(k,1);
+  nameMap.delete(f.name);realBySeat.delete(f.seat);
+  if(ambShirt[f.seat])setFan(f.inst,f.seat,ambShirt[f.seat],ambSkin[f.seat],1);else setFan(f.inst,f.seat,0,0,0.0001);
+  paintSeat(f.seat,seatBase(f.seat));
+  flush();
+  mineBeam.visible=false;mineF=null;
+  $('release').hidden=true;
+  try{localStorage.removeItem('azarkes-stadionu');}catch(e){}
+}
+function saveMine(){if(mineF){try{localStorage.setItem('azarkes-stadionu',JSON.stringify({name:mineF.name,seat:mineF.seat}));}catch(e){}}}
+
+/* ---------- kamera ---------- */
+const cam={theta:Math.PI/2+0.4,elev:0.6,r:330,tx:0,ty:0,tz:0};
+const goal=Object.assign({},cam);
+let flying=false;
+const angDiff=(a,b)=>((a-b+Math.PI)%TAU+TAU)%TAU-Math.PI;
+function clampCam(){
+  cam.elev=clamp(cam.elev,0.05,1.45);
+  cam.r=clamp(cam.r,4,620);
+  cam.ty=clamp(cam.ty,0,26);
+  const m=Math.hypot(cam.tx,cam.tz);
+  if(m>260){cam.tx*=260/m;cam.tz*=260/m;}
+}
+function applyCam(){
+  const ce=Math.cos(cam.elev);
+  camera.position.set(cam.tx+cam.r*ce*Math.sin(cam.theta),cam.ty+cam.r*Math.sin(cam.elev),cam.tz+cam.r*ce*Math.cos(cam.theta));
+  camera.lookAt(cam.tx,cam.ty,cam.tz);
+}
+function startFly(p){
+  Object.assign(goal,cam);Object.assign(goal,p);
+  if(p.theta!==undefined)goal.theta=cam.theta+angDiff(p.theta,cam.theta);
+  flying=true;
+}
+function stepCam(dt){
+  if(!flying)return;
+  const k=1-Math.pow(0.0006,dt);
+  ['theta','elev','r','tx','ty','tz'].forEach(function(f){cam[f]+=(goal[f]-cam[f])*k;});
+  if(Math.abs(goal.r-cam.r)<0.05&&Math.abs(goal.theta-cam.theta)<0.002&&Math.abs(goal.tx-cam.tx)<0.05&&Math.abs(goal.tz-cam.tz)<0.05&&Math.abs(goal.ty-cam.ty)<0.05){
+    Object.assign(cam,goal);flying=false;
+  }
+}
+function flyToSeat(si){
+  startFly({tx:sx[si],ty:sy[si]+0.8,tz:sz[si],theta:sph[si]+Math.PI,elev:0.38,r:10});
+}
+function pan(dx,dy){
+  const sc=cam.r*0.0016,st=Math.sin(cam.theta),ct=Math.cos(cam.theta);
+  cam.tx-=ct*dx*sc;cam.tz+=st*dx*sc;
+  cam.tx+=-st*dy*sc;cam.tz+=-ct*dy*sc;
+  clampCam();
+}
+
+/* ---------- toxunuş ---------- */
+const hint=$('hint');
+let hintGone=false;
+function hideHint(){if(!hintGone){hintGone=true;hint.hidden=true;}}
+const ptrs=new Map();
+let gest=null,tapRec=null,lastTap={t:0,x:0,y:0};
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',function(e){
+  try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  tapRec={x:e.clientX,y:e.clientY,t:performance.now(),moved:ptrs.size>1};
+  flying=false;hideHint();
+  if(ptrs.size===2)gest=null;
+});
+canvas.addEventListener('pointermove',function(e){
+  const p=ptrs.get(e.pointerId);
+  if(!p)return;
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;
+  p.x=e.clientX;p.y=e.clientY;
+  if(tapRec&&Math.hypot(e.clientX-tapRec.x,e.clientY-tapRec.y)>8)tapRec.moved=true;
+  if(ptrs.size===1){
+    if(e.pointerType==='mouse'&&(e.buttons&2)){pan(dx,dy);}
+    else{cam.theta-=dx*0.006;cam.elev+=dy*0.005;clampCam();}
+  }else if(ptrs.size===2){
+    const a=Array.from(ptrs.values()),d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),mx=(a[0].x+a[1].x)/2,my=(a[0].y+a[1].y)/2;
+    if(gest){cam.r*=gest.d/Math.max(d,1);pan(mx-gest.mx,my-gest.my);}
+    gest={d:d,mx:mx,my:my};
+    if(tapRec)tapRec.moved=true;
+  }
+});
+function endPtr(e,cancel){
+  if(!ptrs.has(e.pointerId))return;
+  const wasOne=ptrs.size===1;
+  ptrs.delete(e.pointerId);
+  if(ptrs.size<2)gest=null;
+  if(!cancel&&wasOne&&tapRec&&!tapRec.moved&&performance.now()-tapRec.t<400)handleTap(e.clientX,e.clientY);
+}
+canvas.addEventListener('pointerup',e=>endPtr(e,false));
+canvas.addEventListener('pointercancel',e=>endPtr(e,true));
+canvas.addEventListener('wheel',function(e){
+  e.preventDefault();hideHint();flying=false;
+  cam.r*=Math.exp(e.deltaY*0.0012);clampCam();
+},{passive:false});
+
+function pickSeat(x,y){
+  const r=canvas.getBoundingClientRect();
+  ndc.set(((x-r.left)/r.width)*2-1,-((y-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const o=ray.ray.origin,d=ray.ray.direction;
+  let best=-1,bt=1e9;
+  for(let i=0;i<NS;i++){
+    const wx=sx[i]-o.x,wy=sy[i]+0.6-o.y,wz=sz[i]-o.z;
+    const t=wx*d.x+wy*d.y+wz*d.z;
+    if(t<=0||t>=bt)continue;
+    const d2=wx*wx+wy*wy+wz*wz-t*t,tol=0.45+t*0.018;
+    if(d2<tol*tol){bt=t;best=i;}
+  }
+  return best;
+}
+function handleTap(x,y){
+  const now=performance.now();
+  const dbl=now-lastTap.t<350&&Math.hypot(x-lastTap.x,y-lastTap.y)<30;
+  lastTap={t:now,x:x,y:y};
+  const si=pickSeat(x,y);
+  if(dbl){
+    if(si>=0){flyToSeat(si);return;}
+    const r=canvas.getBoundingClientRect();
+    ndc.set(((x-r.left)/r.width)*2-1,-((y-r.top)/r.height)*2+1);
+    ray.setFromCamera(ndc,camera);
+    const pt=new THREE.Vector3();
+    if(ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-cam.ty),pt))startFly({tx:pt.x,tz:pt.z,r:Math.max(20,cam.r*0.5)});
+    return;
+  }
+  if(si>=0)describeSeat(si);
+}
+
+/* ---------- yazılar, etiketlər ---------- */
+function makeTag(cls){const d=document.createElement('div');d.className='tag'+(cls?' '+cls:'');d.hidden=true;tagsEl.appendChild(d);return d;}
+const tagMine=makeTag('me'),tagFocus=makeTag('focus');
+const pool=[];for(let i=0;i<14;i++)pool.push(makeTag(''));
+const pv=new THREE.Vector3(),dirV=new THREE.Vector3();
+let focusSeat=-1,focusUntil=0,nearList=[],frameNo=0;
+function placeTag(el,x,y,z,lift){
+  pv.set(x,y+lift,z).project(camera);
+  const w=stage.clientWidth,h=stage.clientHeight;
+  const px=(pv.x*0.5+0.5)*w,py=(-pv.y*0.5+0.5)*h;
+  if(pv.z>1||pv.z<-1||px<-40||px>w+40||py<-20||py>h+20){el.hidden=true;return;}
+  el.hidden=false;
+  el.style.transform='translate('+px.toFixed(1)+'px,'+py.toFixed(1)+'px) translate(-50%,-100%)';
+}
+function pickNear(){
+  camera.getWorldDirection(dirV);
+  const cp=camera.position,best=[];
+  for(let i=0;i<reals.length;i++){
+    const f=reals[i];
+    if(f===mineF||f.seat===focusSeat)continue;
+    const dx=sx[f.seat]-cp.x,dy=sy[f.seat]-cp.y,dz=sz[f.seat]-cp.z,dd=dx*dx+dy*dy+dz*dz;
+    if(dd>3600||dx*dirV.x+dy*dirV.y+dz*dirV.z<=0)continue;
+    best.push({d:dd,f:f});
+  }
+  best.sort((a,b)=>a.d-b.d);
+  nearList=best.slice(0,pool.length).map(b=>b.f);
+}
+function updateTags(now){
+  frameNo++;
+  if(cam.r<70){if(frameNo%8===0)pickNear();}else nearList=[];
+  for(let i=0;i<pool.length;i++){
+    const el=pool[i];
+    if(i<nearList.length){
+      const f=nearList[i];
+      if(el._f!==f){el._f=f;el.textContent='@'+f.name;}
+      placeTag(el,sx[f.seat],sy[f.seat],sz[f.seat],1.5);
+    }else el.hidden=true;
+  }
+  if(mineF&&cam.r<300){placeTag(tagMine,sx[mineF.seat],sy[mineF.seat],sz[mineF.seat],2.7);}else tagMine.hidden=true;
+  if(focusSeat>=0&&now<focusUntil){placeTag(tagFocus,sx[focusSeat],sy[focusSeat],sz[focusSeat],1.9);}
+  else{tagFocus.hidden=true;focusBeam.visible=false;}
+}
+
+/* ---------- işıq şousu ---------- */
+const LN=3200;
+const lightGeo=new THREE.BufferGeometry();
+const lightPos=new Float32Array(LN*3),lightCol=new Float32Array(LN*3),lightT=new Float32Array(LN);
+lightGeo.setAttribute('position',new THREE.BufferAttribute(lightPos,3));
+lightGeo.setAttribute('color',new THREE.BufferAttribute(lightCol,3));
+const lightPts=new THREE.Points(lightGeo,new THREE.PointsMaterial({map:GLOW,size:2.4,vertexColors:true,transparent:true,opacity:0.95,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+lightPts.visible=false;lightPts.frustumCulled=false;scene.add(lightPts);
+let showOn=false,lastLight=0;
+function fillLights(){
+  for(let i=0;i<LN;i++){
+    const si=instSeat[Math.floor(Math.random()*instSeat.length)];
+    lightPos[i*3]=sx[si];lightPos[i*3+1]=sy[si]+1.3;lightPos[i*3+2]=sz[si];
+    lightT[i]=(Math.atan2(sz[si],sx[si])+Math.PI)/TAU;
+  }
+  lightGeo.attributes.position.needsUpdate=true;
+}
+const SHOW=[[0,0.71,0.89],[0.91,0.19,0.24],[0.24,0.64,0.23],[1,1,1]];
+function updateLights(t){
+  for(let i=0;i<LN;i++){
+    const k=Math.floor((lightT[i]*4+t*1.6))%4,c=SHOW[(k+4)%4];
+    lightCol[i*3]=c[0];lightCol[i*3+1]=c[1];lightCol[i*3+2]=c[2];
+  }
+  lightGeo.attributes.color.needsUpdate=true;
+}
+
+/* ---------- interfeys ---------- */
+function updateCounter(){
+  const n=reals.length;
+  $('num').textContent=fmt(n);
+  $('cap').textContent='/ '+fmt(NS);
+  $('pct').textContent='%'+(n/NS*100).toFixed(1).replace('.',',');
+  $('sub').textContent=(serverOn?'Real azarkeşlər ümumi siyahıdan gəlir. ':'Server qoşulmayıb: yalnız sənin yerin bu cihazda saxlanır. ')+'Hərəkət edən adsız azarkeşlər, giriş növbəsi və işçilər nümunədir və sayıma daxil deyil.';
+  drawScreen(n);
+}
+function renderTicker(){
+  const track=$('track');track.textContent='';
+  const items=reals.slice(-14).reverse();
+  for(let c=0;c<2;c++){
+    const half=document.createElement('div');half.className='half';
+    if(!items.length){
+      for(let k=0;k<3;k++){
+        const s=document.createElement('span');s.className='it note';
+        s.textContent='Hələ heç kim yer tutmayıb · ilk sən ol';
+        half.appendChild(s);
+      }
+    }else{
+      items.forEach(function(f){
+        const s=document.createElement('span');s.className='it';
+        const b=document.createElement('b');b.textContent='@'+f.name;
+        const a=document.createElement('span');a.className='ar';a.textContent='→';
+        const e=document.createElement('em');e.textContent=seatBlock(f.seat);
+        s.append(b,a,e);half.appendChild(s);
+      });
+    }
+    track.appendChild(half);
+  }
+  track.style.animationDuration=Math.max(30,(items.length||3)*6)+'s';
+}
+let toastTimer=0;
+function showToast(t1,t2,actLabel,actFn){
+  $('t1').textContent=t1;$('t2').textContent=t2||'';
+  const b=$('tact');
+  if(actLabel){b.textContent=actLabel;b.hidden=false;b.onclick=function(){actFn();};}else{b.hidden=true;b.onclick=null;}
+  $('toast').hidden=false;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){$('toast').hidden=true;},actLabel?10000:7000);
+}
+const NAME_RE=/^[a-z0-9._]{1,30}$/;
+const cleanName=v=>String(v||'').trim().replace(/^@+/,'').toLowerCase();
+function readName(){
+  const n=cleanName($('who').value);
+  if(!n){showToast('İstifadəçi adını yaz','Aşağıdakı xanaya yaz, məsələn: @istifadeci_adin');$('who').focus();return null;}
+  if(!NAME_RE.test(n)){showToast('İstifadəçi adı yararsızdır','Yalnız hərf, rəqəm, nöqtə və alt xətt ola bilər.');return null;}
+  return n;
+}
+function describeSeat(si){
+  const f=realBySeat.get(si),loc=seatLoc(si);
+  if(f){showToast('@'+f.name,loc+(f.mine?' · sənin yerin':''));return;}
+  const label=ambShirt[si]?'Nümunə azarkeş':'Boş yer';
+  showToast(label,loc+(ambShirt[si]?' · bəzək üçündür, istifadəçi deyil':''),mineF?null:'Bura otur',function(){const n=readName();if(n)claim(n,si);});
+}
+function pickFreeSeat(){
+  for(let a=0;a<200;a++){
+    const i=Math.floor(Math.random()*NS);
+    if(!realBySeat.has(i)&&srow[i]<22)return i;
+  }
+  for(let i=0;i<NS;i++)if(!realBySeat.has(i))return i;
+  return -1;
+}
+async function claim(name,preferSeat){
+  if(mineF){flyToSeat(mineF.seat);showToast('Sən artıq oturmusan','@'+mineF.name+' · '+seatLoc(mineF.seat));return;}
+  if(nameMap.has(name)){const f=nameMap.get(name);flyToSeat(f.seat);showToast('@'+name+' artıq oturub',seatLoc(f.seat));return;}
+  let si=(preferSeat===undefined||preferSeat===null)?pickFreeSeat():preferSeat;
+  if(si<0||realBySeat.has(si)){si=pickFreeSeat();}
+  if(si<0){showToast('Stadion doludur','Boş yer qalmayıb.');return;}
+  if(serverOn){
+    let ok=false;
+    for(let a=0;a<3&&!ok;a++){
+      let res;
+      try{res=await apiClaim(name,si);}catch(e){showToast('Server cavab vermədi','Bir az sonra yenidən yoxla.');return;}
+      if(res.status===200||res.status===201){ok=true;break;}
+      if(res.status===409&&res.body&&res.body.error==='name_taken'){await apiLoad();const f=nameMap.get(name);if(f){flyToSeat(f.seat);showToast('@'+name+' artıq oturub',seatLoc(f.seat));}return;}
+      if(res.status===409){await apiLoad();si=pickFreeSeat();if(si<0){showToast('Stadion doludur','Boş yer qalmayıb.');return;}continue;}
+      showToast('Yer tutula bilmədi','Server xəta qaytardı ('+res.status+').');return;
+    }
+    if(!ok){showToast('Yer tutula bilmədi','Bir az sonra yenidən yoxla.');return;}
+  }
+  const f=addReal(name,si,true);
+  if(!f)return;
+  saveMine();updateCounter();renderTicker();
+  if(showOn)fillLights();
+  flyToSeat(si);
+  showToast('@'+name+' yerini tutdu',seatLoc(si)+(serverOn?'':' · yalnız bu cihazda saxlanıldı'));
+}
+function find(name){
+  const f=nameMap.get(name);
+  if(!f){
+    showToast('@'+name+' stadionda yoxdur','Bu adla yer tutmaq istəyirsən?',mineF?null:'Bu adla otur',function(){claim(name);});
+    return;
+  }
+  flyToSeat(f.seat);
+  if(!f.mine){
+    focusSeat=f.seat;focusUntil=performance.now()+9000;
+    focusBeam.position.set(sx[f.seat],sy[f.seat],sz[f.seat]);focusBeam.visible=true;
+    tagFocus.textContent='@'+f.name;
+  }
+  showToast('@'+f.name,seatLoc(f.seat)+(f.mine?' · sənin yerin':''));
+}
+$('sform').addEventListener('submit',function(e){e.preventDefault();const n=readName();if(n)find(n);});
+$('claim').addEventListener('click',function(){const n=readName();if(n)claim(n);});
+$('release').addEventListener('click',function(){
+  if(!mineF)return;
+  const nm=mineF.name;removeMine();updateCounter();renderTicker();
+  showToast('Yer buraxıldı','@'+nm+' artıq stadionda yoxdur.');
+});
+$('show').addEventListener('click',function(){
+  showOn=!showOn;this.setAttribute('aria-pressed',String(showOn));
+  lightPts.visible=showOn;
+  if(showOn){fillLights();updateLights(performance.now()/1000);}
+});
+$('roof').addEventListener('click',function(){
+  const on=this.getAttribute('aria-pressed')!=='true';
+  this.setAttribute('aria-pressed',String(on));roofGroup.visible=on;
+});
+$('home').addEventListener('click',function(){startFly({tx:0,ty:0,tz:0,theta:Math.PI/2+0.4,elev:0.6,r:330});});
+$('up').addEventListener('click',function(){hideHint();startFly({ty:clamp((flying?goal.ty:cam.ty)+3,0,26)});});
+$('down').addEventListener('click',function(){hideHint();startFly({ty:clamp((flying?goal.ty:cam.ty)-3,0,26)});});
+
+/* ---------- ortaq server (isteğe bağlı: /api/seats) ---------- */
+async function apiLoad(){
+  try{
+    const r=await fetch('/api/seats',{cache:'no-store'});
+    if(!r.ok)throw new Error('yox');
+    const j=await r.json();
+    if(!j||!Array.isArray(j.fans))throw new Error('format');
+    serverOn=true;
+    let added=false;
+    j.fans.forEach(function(x){
+      if(!x||typeof x.name!=='string'||!NAME_RE.test(x.name)||!Number.isInteger(x.seat)||x.seat<0||x.seat>=NS)return;
+      const isMine=!!(mineF&&mineF.name===x.name);
+      if(isMine||nameMap.has(x.name)||realBySeat.has(x.seat))return;
+      if(addReal(x.name,x.seat,false))added=true;
+    });
+    $('release').hidden=true;
+    if(added&&showOn)fillLights();
+    updateCounter();renderTicker();
+    return true;
+  }catch(e){return false;}
+}
+async function apiClaim(name,seat){
+  const r=await fetch('/api/seats',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:name,seat:seat})});
+  let body=null;try{body=await r.json();}catch(e){}
+  return {status:r.status,body:body};
+}
+
+/* ---------- yadda saxlanmış yer ---------- */
+(function restore(){
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem('azarkes-stadionu')||'null');}catch(e){}
+  if(saved&&typeof saved.name==='string'&&NAME_RE.test(saved.name)&&Number.isInteger(saved.seat)&&saved.seat>=0&&saved.seat<NS){
+    $('who').value='@'+saved.name;
+    addReal(saved.name,saved.seat,true);
+  }
+  updateCounter();renderTicker();
+  apiLoad();
+  setInterval(function(){if(serverOn)apiLoad();},25000);
+})();
+
+/* ---------- dövr ---------- */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  timeU.value=now/1000;
+  stepCam(dt);clampCam();applyCam();
+  const pulse=reduceMotion?0.55:0.5+0.15*Math.sin(now/330);
+  mineBeam.material.opacity=pulse;focusBeam.material.opacity=pulse;
+  if(showOn&&now-lastLight>90&&!reduceMotion){lastLight=now;updateLights(now/1000);}
+  const ts=reduceMotion?0:now/1000,dd=reduceMotion?0:dt;
+  for(let u=0;u<updaters.length;u++)updaters[u](ts,dd);
+  updateTags(now);
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+}
+})();
+</script>
+
+</body></html>
